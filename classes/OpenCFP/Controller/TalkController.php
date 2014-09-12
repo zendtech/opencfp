@@ -68,12 +68,25 @@ class TalkController
         $id = $req->get('id');
         $talk_id = filter_var($id, FILTER_VALIDATE_INT);
 
+        if (empty($talk_id)) {
+            $app['session']->set('flash', [
+                'type' => 'error',
+                'short' => 'Permission Denied',
+                'ext' => 'Missing talk id']
+            );
+            return $app->redirect($app['url'] . '/dashboard');
+        }
+
         $talk_mapper = $app['spot']->mapper('OpenCFP\Entity\Talk');
         $talk_info = $talk_mapper->get($talk_id);
         $user = $app['sentry']->getUser();
 
         if ((int)$talk_info->user_id !== (int)$user->getId()) {
-            die($talk_info->user_id . " !== " . $user->getId());
+            $app['session']->set('flash', [
+                'type' => 'error',
+                'short' => 'Permission Denied',
+                'ext' => 'You cannot view talks that do not belong to you']
+            );
 
             return $app->redirect($app['url'] . '/dashboard');
         }
