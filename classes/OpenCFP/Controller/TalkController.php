@@ -70,19 +70,32 @@ class TalkController
 
         $talk_mapper = $app['spot']->mapper('OpenCFP\Entity\Talk');
         $talk_info = $talk_mapper->get($talk_id);
-
         $user = $app['sentry']->getUser();
 
-        if ($talk_info['user_id'] !== $user->getId()) {
+        if ((int)$talk_info->user_id !== (int)$user->getId()) {
+            die($talk_info->user_id . " !== " . $user->getId());
+
             return $app->redirect($app['url'] . '/dashboard');
         }
 
+        // Grab all the other talks and filter out the one we have
+        $all_talks = $talk_mapper->getByUser($user->getId());
+        $other_talks = array_filter($all_talks, function ($talk) use ($talk_id) {
+            if ((int)$talk['id'] == (int)$talk_id) {
+                return false;
+            }
+
+            return true;
+        });
+
+
         $template = $app['twig']->loadTemplate('talk/view.twig');
-        $data = array(
+        $data = [
             'id' => $talk_id,
             'talk' => $talk_info,
-            'user' => $user
-        );
+            'user' => $user,
+            'otherTalks' => $other_talks
+        ];
 
         return $template->render($data);
     }
@@ -112,7 +125,7 @@ class TalkController
                 'ext' => 'You cannot edit talks once the call for papers has ended']
             );
 
-            return $app->redirect($app['url'] . '/talk/'.$talk_id);
+            return $app->redirect($app['url'] . '/dashboard');
         }
 
         if (empty($talk_id)) {

@@ -58,6 +58,7 @@ function deleteTalk(tid) {
                 <th>Created On</th>
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
+                <th>&nbsp;</th>
             </tr>
         </thead>
         <tbody>
@@ -67,6 +68,7 @@ function deleteTalk(tid) {
                 <td>{{ talk.type }}</td>
                 <td>{{ talk.category }}</td>
                 <td>{{ talk.created_at|date("F jS \\a\\t g:ia T") }}</td>
+                <td><a href="{{ site.url }}/talk/view/{{ talk.id }}">View</a></td>
                 <td><a href="{{ site.url }}/talk/edit/{{ talk.id}}">Edit</a></td>
                 <td><a href="#" onClick="deleteTalk('{{ talk.id }}');return false;">Delete</a></td>
             </tr>
