@@ -84,8 +84,88 @@ class TalkControllerTest extends PHPUnit_Framework_TestCase
 
         $update_response = $controller->updateAction($this->req, $this->app);
         $update_flash = $this->app['session']->get('flash');
-        $this->assertEquals($update_flash['type'], 'success');
+        $this->assertEquals(
+            $update_flash['type'],
+            'success'
+        );
     }
+
+    /**
+     * Make sure that the edit action loads the expected talk and displays
+     * the correct information
+     *
+     * @test
+     */
+    public function editActionDisplaysFormWithCorrectFieldValues()
+    {
+        $this->req->shouldReceive('get')->with('id')->andReturn(1);
+
+        // Create a talk for us to retrieve
+        $talk_mapper = $this->app['spot']->mapper('OpenCFP\Entity\Talk');
+        $talk_data = [
+            'title' => 'Edit Action Talk',
+            'description' => 'This is a longer description of a talk',
+            'type' => 'regular',
+            'level' => 'Mid-level',
+            'category' => 'testing',
+            'user_id' => $this->app['sentry']->getUser()->getId()
+        ];
+        $talk_mapper->create($talk_data);
+
+        // Grab our controller object and run the action
+        $controller = new OpenCFP\Controller\TalkController();
+        $response = $controller->editAction($this->req, $this->app);
+
+        // Do we have a form
+        $this->assertContains("<form", $response, "Could not find a form");
+
+        // Do we have some of the form fields we are expecting
+        $this->assertContains('<input id="form-talk-title"', $response);
+        $this->assertContains('<select id="form-talk-type" name="type">', $response);
+        $this->assertContains('<button type="submit"', $response);
+
+        // Do we have data in the form fields?
+        $this->assertContains($talk_data['title'], $response);
+        $this->assertContains($talk_data['description'], $response);
+        $this->assertContains($talk_data['type'], $response);
+        $this->assertContains($talk_data['level'], $response);
+        $this->assertContains($talk_data['category'], $response);
+
+    }
+
+    /**
+     * Verify that you cannot edit talks that do not belong to you
+     *
+     * @test
+     */
+    public function cannotEditTalksThatDoNotBelongToUser()
+    {
+        $this->req->shouldReceive('get')->with('id')->andReturn(1);
+
+        // Create a talk for us to retrieve
+        $talk_mapper = $this->app['spot']->mapper('OpenCFP\Entity\Talk');
+        $talk_data = [
+            'title' => 'Edit Action Talk',
+            'description' => 'This is a longer description of a talk',
+            'type' => 'regular',
+            'level' => 'Mid-level',
+            'category' => 'testing',
+            'user_id' => 0
+        ];
+        $talk_mapper->create($talk_data);
+
+        // Grab our controller object and run the action
+        $controller = new OpenCFP\Controller\TalkController();
+        $response = $controller->editAction($this->req, $this->app);
+
+        // Response should be you redirected to the dashboard
+        $this->assertEquals(
+            'Symfony\Component\HttpFoundation\RedirectResponse',
+            get_class($response),
+            "Did not get redirected as expected"
+        );
+    }
+
 
     /**
      * Method for setting the values that would be posted to a controller
